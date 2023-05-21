@@ -42,21 +42,21 @@ app.MapPost("/allTasks", async (MarvelousBackend.Task task, TaskDb db) =>
 })
 .RequireCors(MyAllowSpecificOrigins);
 
-app.MapPut("/allTasks/check/{id}", async (int id, MarvelousBackend.Task inputTask, TaskDb db) =>
+app.MapPut("/allTasks/check/{id}", async (int id, TaskDb db) =>
 {
 	var task = await db.Tasks.FindAsync(id);
 	if (task is null) return Results.NotFound();
-	if (task.Checked) return Results.NoContent();
+	if (task.Checked) return Results.Ok();
 
 	task.Checked = true;
 	task.DateCompleted = DateTime.Now;
 	await db.SaveChangesAsync();
 
-	return Results.NoContent();
+	return TypedResults.Ok(task);
 })
 .RequireCors(MyAllowSpecificOrigins);
 
-app.MapPut("/allTasks/uncheck/{id}", async (int id, MarvelousBackend.Task inputTask, TaskDb db) =>
+app.MapPut("/allTasks/uncheck/{id}", async (int id, TaskDb db) =>
 {
 	var task = await db.Tasks.FindAsync(id);
 	if (task is null) return Results.NotFound();
@@ -66,20 +66,17 @@ app.MapPut("/allTasks/uncheck/{id}", async (int id, MarvelousBackend.Task inputT
 	task.DateCompleted = null;
 	await db.SaveChangesAsync();
 
-	return Results.NoContent();
+	return TypedResults.Ok(task);
 })
 .RequireCors(MyAllowSpecificOrigins);
 
-app.MapDelete("/allTasks/{id}", async (int id, TaskDb db) =>
+app.MapDelete("/allTasks", async (TaskDb db) =>
 {
-	if (await db.Tasks.FindAsync(id) is MarvelousBackend.Task task)
-	{
-		db.Tasks.Remove(task);
-		await db.SaveChangesAsync();
-		return Results.Ok(task);
-	}
+	var taskList = await db.Tasks.ToListAsync();
+	db.Tasks.RemoveRange(taskList);
+	await db.SaveChangesAsync();
 
-	return Results.NotFound();
+	return Results.Ok();
 })
 .RequireCors(MyAllowSpecificOrigins);
 
